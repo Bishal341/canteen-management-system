@@ -8,7 +8,14 @@ const signup = async (req, res) => {
 
     if (!username || !email || !password) {
       return res.status(400).json({
-        message: `Please fill out all feilds`,
+        message: "Please fill out all feilds",
+        success: false,
+      });
+    }
+
+    if(password.length < 8) {
+      return res.status(400).json({
+        message: "Password Must be 8 character or more",
         success: false,
       });
     }
@@ -37,24 +44,26 @@ const signup = async (req, res) => {
         _id: newUser._id,
         username: newUser.username,
         email: newUser.email,
+        role: newUser.role,
       },
       process.env.JWT_SECRET,
       { expiresIn: "1d" },
     );
 
     return res.status(201).json({
-      message: 'Register succesful',
+      message: "Register succesful",
       success: true,
       token,
       user: {
-        _id: newUser.id,
+        _id: newUser._id,
         username: newUser.username,
         email: newUser.email,
+        role: newUser.role,
       },
     });
   } catch (error) {
     return res.status(500).json({
-      message:`Internal Server Error: ${error}`,
+      message:`Internal Server Error: ${error.message}`,
       success: false,
     });
   }
@@ -101,6 +110,7 @@ const login = async (req, res) => {
         _id: user._id,
         username: user.username,
         email: user.email,
+        role: user.role,
       },
       process.env.JWT_SECRET,
       {expiresIn: "1d"},
@@ -114,14 +124,44 @@ const login = async (req, res) => {
         _id: user._id,
         username: user.username,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {
     return res.status(500).json({
-      message: `server error${error.message}`,
+      message: `server error: ${error.message}`,
       success: false,
     });
   }
 };
 
-module.exports = {signup, login};
+const profile = async(req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+
+    if(!user){
+      return res.status(404).json({
+        message: "User not found",
+        success: false,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      },
+    });
+    
+  }catch(err){
+    return res.status(500).json({
+      message: `server error: ${err.message}`,
+      success: false,
+    });
+  }
+}
+
+module.exports = {signup, login, profile};

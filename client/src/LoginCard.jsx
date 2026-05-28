@@ -1,10 +1,27 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { BsEye, BsEyeSlash } from "react-icons/bs";
+import { Login } from "./Routes/Loginsignup";
+import { useNavigate } from "react-router-dom";
+import ImSpinner from "./bundles/Spinner";
 
 const LoginCard = () => {
   const [email, setemail] = useState("");
   const [password, setpassword] = useState("");
   const [visible, setvisible] = useState(false);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [spinner, setspinner] = useState(false);
+
+  const handleLogin = async () => {
+    setspinner(true);
+    setLoading(true);
+    const res = await Login(email, password);
+    if (res?.token) {
+      navigate("/dashboard");
+    }
+    setLoading(false);
+    setspinner(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-base-200">
@@ -40,9 +57,11 @@ const LoginCard = () => {
 
         <button
           className="btn btn-neutral mt-5 w-full"
-          onClick={() => login(email, password)}
+          onClick={handleLogin}
+          disabled={loading}
         >
-          Login
+          {spinner ? <ImSpinner /> : null}
+          {loading ? "Logging in..." : "Login"}
         </button>
 
         <div className="flex justify-center text-lg text-blue-500 pt-4 ">
