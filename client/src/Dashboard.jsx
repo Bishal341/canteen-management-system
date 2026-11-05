@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import API from "./API/API";
 import { useNavigate } from "react-router-dom";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import {
   Menu,
   Search,
@@ -176,22 +178,49 @@ const getGreeting = () => {
   return "Good Evening";
 };
 
+const isDesktopLg = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(min-width: 1024px)").matches;
+
 const Dashboard = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(isDesktopLg);
   const [profileOpen, setProfileOpen] = useState(false);
   const [appsOpen, setAppsOpen] = useState(false);
   const [activeItem, setActiveItem] = useState("Dashboard");
   const [user, setUser] = useState(null);
   const greeting = getGreeting();
   const navigate = useNavigate();
+  const mainRef = useRef(null);
+
+  const closeMobileSidebar = () => {
+    if (!isDesktopLg()) setSidebarOpen(false);
+  };
+
+  useGSAP(
+    () => {
+      const prefersReduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      if (prefersReduced) return;
+
+      gsap.from("[data-animate]", {
+        opacity: 0,
+        y: 16,
+        duration: 0.45,
+        stagger: 0.08,
+        ease: "power2.out",
+      });
+    },
+    { scope: mainRef },
+  );
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await API.get("/profile");
         setUser(res.data.user);
-      } catch (err) {
-        console.error("Failed to fetch profile: ", err);
+      } catch {
+        // Profile fetch failed; user stays null until retry/logout
       }
     };
     fetchProfile();
@@ -214,13 +243,31 @@ const Dashboard = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") closeMobileSidebar();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={closeMobileSidebar}
+        />
+      )}
+
       {/* ── SIDEBAR ── */}
       <aside
-        className={`${
-          sidebarOpen ? "w-64" : "w-0 lg:w-16"
-        } transition-all duration-300 ease-in-out flex-shrink-0 bg-gradient-to-b from-orange-600 to-amber-700 flex flex-col overflow-hidden z-30 shadow-2xl`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col overflow-hidden bg-gradient-to-b from-orange-600 to-amber-700 shadow-2xl transition-transform duration-300 ease-in-out lg:static lg:z-30 lg:translate-x-0 lg:flex-shrink-0 ${
+          sidebarOpen ? "translate-x-0 lg:w-64" : "-translate-x-full lg:w-16 lg:translate-x-0"
+        }`}
       >
         {/* Sidebar Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-orange-500/40">
@@ -260,7 +307,10 @@ const Dashboard = () => {
                     return (
                       <li key={label}>
                         <button
-                          onClick={() => setActiveItem(label)}
+                          onClick={() => {
+                            setActiveItem(label);
+                            closeMobileSidebar();
+                          }}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group
                           ${
                             isActive
@@ -520,10 +570,10 @@ const Dashboard = () => {
         </header>
 
         {/* ── PAGE CONTENT ── */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
           {/* Page heading */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
+          <div className="mb-6" data-animate>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               {greeting}, {user ? user.username : " "}!
             </h1>
             <p className="text-gray-500 text-sm mt-1">
@@ -536,6 +586,7 @@ const Dashboard = () => {
             {stats.map(({ label, value, change, color, icon: Icon }) => (
               <div
                 key={label}
+                data-animate
                 className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 overflow-hidden relative"
               >
                 <div
@@ -561,7 +612,10 @@ const Dashboard = () => {
           {/* Bottom grid */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
             {/* Recent Orders */}
-            <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div
+              data-animate
+              className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+            >
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                 <h2 className="font-bold text-gray-900">Recent Orders</h2>
                 <button className="text-orange-500 text-sm font-medium hover:underline">
@@ -623,7 +677,10 @@ const Dashboard = () => {
             </div>
 
             {/* Popular Items */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div
+              data-animate
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+            >
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                 <h2 className="font-bold text-gray-900">Popular Items</h2>
                 <button className="text-orange-500 text-sm font-medium hover:underline">

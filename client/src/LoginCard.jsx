@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { BsEye, BsEyeSlash } from "react-icons/bs";
 import { Login } from "./Routes/Loginsignup";
 import { useNavigate } from "react-router-dom";
 import ImSpinner from "./bundles/Spinner";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 const LoginCard = () => {
   const [email, setemail] = useState("");
@@ -11,6 +13,24 @@ const LoginCard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [spinner, setspinner] = useState(false);
+  const cardRef = useRef(null);
+
+  useGSAP(
+    () => {
+      const prefersReduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      if (prefersReduced || !cardRef.current) return;
+
+      gsap.from(cardRef.current, {
+        opacity: 0,
+        y: 20,
+        duration: 0.55,
+        ease: "power2.out",
+      });
+    },
+    { scope: cardRef },
+  );
 
   const handleLogin = async () => {
     setspinner(true);
@@ -24,8 +44,11 @@ const LoginCard = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200">
-      <fieldset className="fieldset bg-base-100 border-base-300 rounded-box w-96 border p-6 shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-base-200 px-4 py-8">
+      <fieldset
+        ref={cardRef}
+        className="fieldset bg-base-100 border-base-300 rounded-box w-full max-w-96 border p-4 sm:p-6 shadow-lg"
+      >
         <legend className="fieldset-legend text-2xl font-bold mb-2">
           Login
         </legend>

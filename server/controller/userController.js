@@ -2,13 +2,35 @@ const User = require("../model/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+const isValidEmail = (email) =>
+  typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 const signup = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const username =
+      typeof req.body.username === "string" ? req.body.username.trim() : "";
+    const email =
+      typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const password =
+      typeof req.body.password === "string" ? req.body.password : "";
 
     if (!username || !email || !password) {
       return res.status(400).json({
         message: "Please fill out all feilds",
+        success: false,
+      });
+    }
+
+    if (username.length < 3) {
+      return res.status(400).json({
+        message: "Username must be at least 3 characters",
+        success: false,
+      });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        message: "Please enter a valid email",
         success: false,
       });
     }
@@ -74,12 +96,21 @@ const signup = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
+    const email =
+      typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const password =
+      typeof req.body.password === "string" ? req.body.password : "";
 
     if (!email || !password) {
       return res.status(400).json({
         message: "Please fill all the feilds",
+        success: false,
+      });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        message: "Please enter a valid email",
         success: false,
       });
     }
